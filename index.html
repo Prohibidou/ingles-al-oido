@@ -281,6 +281,7 @@ const $ = (id) => document.getElementById(id);
 const audio = $("audio");
 const scroll = $("scroll");
 let pista = null, items = [], activa = -1, revelarSiempre = false, tocandoUsuario = 0, arrastrando = false;
+let arranque = 0;   // dónde retomar; se aplica recién cuando el audio tiene metadatos
 
 const mmss = (s) => {
   s = Math.max(0, Math.round(s || 0));
@@ -369,9 +370,10 @@ function abrir(p, reproducirYa) {
     b.addEventListener("click", () => { audio.currentTime = it.inicio + 0.05; reproducir(); });
     cont.appendChild(b);
   });
-  audio.src = BASE + p.archivo;
   const pos = parseFloat(leer("pos:" + p.archivo) || "0");
-  audio.currentTime = pos > 2 && pos < p.duracion - 2 ? pos : 0;
+  arranque = pos > 2 && pos < p.duracion - 2 ? pos : 0;
+  audio.src = BASE + p.archivo;
+  audio.load();
   guardar("ultima", p.archivo);
   $("cab-indice").hidden = true;
   $("cab-pista").hidden = false;
@@ -379,7 +381,7 @@ function abrir(p, reproducirYa) {
   $("vista-pista").hidden = false;
   $("player").hidden = false;
   scroll.scrollTop = 0;
-  marcar(audio.currentTime, true);
+  marcar(arranque, true);
   ponerMetadatos();
   if (reproducirYa) reproducir();
 }
@@ -508,6 +510,7 @@ function ponerMetadatos() {
     nexttrack: () => saltar(1),
     seekbackward: () => saltar(-1),
     seekforward: () => saltar(1),
+    stop: () => { audio.pause(); },
     seekto: (d) => { if (d.fastSeek && audio.fastSeek) audio.fastSeek(d.seekTime); else audio.currentTime = d.seekTime; },
   };
   for (const [k, fn] of Object.entries(acciones)) {
@@ -549,9 +552,13 @@ audio.addEventListener("pause", () => {
 audio.addEventListener("loadedmetadata", () => {
   const v = parseFloat(leer("vel") || "1");
   audio.playbackRate = VELOCIDADES.includes(v) ? v : 1;
+  if (arranque > 0) {
+    try { audio.currentTime = arranque; } catch (e) {}
+    arranque = 0;
+  }
   posicionBloqueada();
 });
-audio.addEventListener("seeked", posicionBloqueada);
+audio.addEventListener("seeked", () => { marcar(audio.currentTime, true); posicionBloqueada(); });
 audio.addEventListener("ratechange", posicionBloqueada);
 audio.addEventListener("ended", () => {
   if (pista) guardar("pos:" + pista.archivo, "0");
