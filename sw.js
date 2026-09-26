@@ -1,7 +1,7 @@
 /* Service worker: el armazón se guarda al instalar; los audios, cuando se piden.
    Así la app abre sin datos y cada pista escuchada queda disponible offline. */
 const SHELL = "shell-v1";
-const AUDIO = "audio-v1";
+const AUDIO = "audio-f6da764023";
 const BASICOS = ["./", "index.html", "manifest.webmanifest", "icono-192.png", "icono-512.png"];
 
 self.addEventListener("install", (e) => {
