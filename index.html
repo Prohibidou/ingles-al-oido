@@ -278,7 +278,9 @@
       <p class="nota" id="nota-instalar">
         Para tenerla como app: abrí el menú del navegador y elegí
         <b>Agregar a la pantalla de inicio</b>. Se abre a pantalla completa y podés
-        controlarla desde la pantalla bloqueada.
+        controlarla desde la pantalla bloqueada. <b>Sin datos</b> funciona desde la app
+        instalada, o en el navegador con la dirección terminada en barra:
+        <b>prohibidou.github.io/ingles-al-oido/</b>
       </p>
     </section>
     <section id="vista-pista" hidden>
@@ -508,7 +510,13 @@ function reproducir() {
   const p = audio.play();
   if (p && p.catch) p.catch(() => { playPendiente = true; avisar(true); });
 }
-function avisar(mostrar) { const a = $("aviso"); if (a) a.hidden = !mostrar; }
+const AVISO_PLAY = "El siguiente bloque está listo. Tocá la pantalla o ▶ para seguir.";
+function avisar(mostrar, texto) {
+  const a = $("aviso");
+  if (!a) return;
+  a.textContent = texto || AVISO_PLAY;
+  a.hidden = !mostrar;
+}
 function reintentarPlay() {
   if (!playPendiente) return;
   playPendiente = false;
@@ -699,6 +707,16 @@ function alTerminar() {
   if (sig) abrir(sig, true);
 }
 audio.addEventListener("ended", alTerminar);
+audio.addEventListener("error", async () => {
+  if (!pista) return;
+  const guardada = await estaGuardada(pista.archivo);
+  if (!guardada && !navigator.onLine) {
+    avisar(true, "Esta pista no está guardada en el teléfono. Con datos, volvé al inicio y tocá «Guardar para usar sin datos».");
+  } else if (!guardada) {
+    avisar(true, "No se pudo cargar el audio. Revisá la conexión y tocá ▶ de nuevo.");
+  }
+});
+audio.addEventListener("playing", () => { const a = $("aviso"); if (a && a.textContent !== AVISO_PLAY) avisar(false); });
 // algunos navegadores en segundo plano emiten pause en vez de ended al llegar al final
 audio.addEventListener("pause", () => {
   if (!audio.ended && audio.duration && audio.currentTime >= audio.duration - 0.3) alTerminar();
@@ -730,6 +748,26 @@ scroll.addEventListener("touchstart", () => { tocandoUsuario = Date.now(); }, { 
 /* ---------------- guardar todo para usar sin datos ---------------- */
 const CACHE_AUDIO = "audio-7806db9120";
 
+async function estaGuardada(archivo) {
+  if (!("caches" in window)) return false;
+  try { return !!(await (await caches.open(CACHE_AUDIO)).match(BASE + archivo)); } catch (e) { return false; }
+}
+
+// sin datos, el índice marca las pistas que no están en el teléfono
+async function marcarGuardadas() {
+  if (!("caches" in window) || navigator.onLine) return;
+  const filas = document.querySelectorAll("#grupos .fila");
+  const pistas = DATOS.pistas.filter((p) => GRUPOS.some((g) => g.test(p)));
+  for (let i = 0; i < filas.length && i < pistas.length; i++) {
+    if (!(await estaGuardada(pistas[i].archivo))) {
+      const sub = filas[i].querySelector(".sub");
+      if (sub && !sub.dataset.marcada) { sub.textContent += " · no guardada"; sub.dataset.marcada = "1"; }
+      filas[i].style.opacity = "0.55";
+    }
+  }
+}
+addEventListener("offline", marcarGuardadas);
+
 async function yaGuardados() {
   if (!("caches" in window)) return 0;
   try {
@@ -757,19 +795,39 @@ async function pintarDescarga() {
   }
 }
 
+const MB = (b) => Math.ceil(b / 1048576);
+function sinLugar(faltan) {
+  $("descarga-barra").hidden = true;
+  $("descarga-tit").textContent = "No hay lugar en el teléfono";
+  $("descarga-sub").textContent = `Liberá unos ${MB(faltan)} MB y tocá de nuevo: sigue desde donde quedó`;
+}
 $("b-descargar").addEventListener("click", async function descargar() {
   if (!("caches" in window)) return;
   const barra = $("descarga-barra");
+  const c = await caches.open(CACHE_AUDIO);
+  // antes de bajar, ver si entra: el navegador corta a mitad de camino si no hay lugar
+  const falta = [];
+  for (const p of DATOS.pistas) if (!(await c.match(BASE + p.archivo))) falta.push(p);
+  const necesita = falta.reduce((a, p) => a + (p.bytes || 0), 0);
+  try {
+    if (navigator.storage && navigator.storage.estimate) {
+      const { quota, usage } = await navigator.storage.estimate();
+      if (quota && quota - usage < necesita * 1.05) return sinLugar(necesita * 1.05 - (quota - usage));
+    }
+  } catch (e) {}
   barra.hidden = false;
   $("descarga-tit").textContent = "Guardando…";
-  const c = await caches.open(CACHE_AUDIO);
-  let hechas = 0;
-  for (const p of DATOS.pistas) {
-    try {
-      if (!(await c.match(BASE + p.archivo))) await c.add(BASE + p.archivo);
-    } catch (e) {
-      $("descarga-tit").textContent = "No se pudo guardar todo";
-      $("descarga-sub").textContent = "Probá de nuevo con mejor señal";
+  let hechas = DATOS.pistas.length - falta.length;
+  for (const p of falta) {
+    let error = null;
+    for (let intento = 0; intento < 2; intento++) {
+      try { await c.add(BASE + p.archivo); error = null; break; } catch (e) { error = e; }
+    }
+    if (error) {
+      if (error.name === "QuotaExceededError") return sinLugar(falta.slice(falta.indexOf(p)).reduce((a, q) => a + (q.bytes || 0), 0));
+      barra.hidden = true;
+      $("descarga-tit").textContent = `Se cortó en la pista ${hechas + 1} de ${DATOS.pistas.length}`;
+      $("descarga-sub").textContent = "Revisá la conexión y tocá de nuevo: sigue desde ahí";
       return;
     }
     hechas++;
@@ -789,6 +847,7 @@ ponerVelocidad(VELOCIDADES.includes(velIni) ? velIni : 1);
 try { if (matchMedia("(display-mode: standalone)").matches || navigator.standalone) $("nota-instalar").hidden = true; } catch (e) {}
 pintarIndice();
 pintarDescarga();
+marcarGuardadas();
 // pedir que el navegador no borre los datos guardados (posición, pistas sin datos)
 try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
 // volver a donde estabas: la pista abierta, en la tarjeta y el segundo donde quedó
