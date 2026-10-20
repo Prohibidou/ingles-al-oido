@@ -64,7 +64,7 @@
     --accent: #b3121f; --accent-ink: #ffffff;
     --mark: rgba(255, 206, 0, 0.28); --mark-edge: #d4a900;
     --turno: #1b1b1b; --turno-soft: rgba(27, 27, 27, 0.12);
-    --f-oro: #ffce00; --f-negro: #1b1b1b; --f-rojo: #cc0000; --f-opacidad: 0.12; --f-raya-negro: #1b1b1b;
+    --f-oro: #ffce00; --f-negro: #1b1b1b; --f-rojo: #cc0000; --f-opacidad: 1; --f-raya-negro: #1b1b1b; --f-bandera-negro: #000000; --f-bandera-rojo: #dd0000;
   }
   @media (prefers-color-scheme: dark) {
     :root[data-fondo="bauhaus"]:not([data-theme="light"]) {
@@ -74,7 +74,7 @@
       --mark: rgba(255, 206, 0, 0.13); --mark-edge: #ffce00;
       --turno: #ff6b5e; --turno-soft: rgba(255, 107, 94, 0.16);
       /* el negro no se ve sobre negro: en oscuro esa pieza va en tinta clara */
-      --f-oro: #ffce00; --f-negro: #eeeae2; --f-rojo: #cc0000; --f-opacidad: 0.16; --f-raya-negro: #3a3a3a;
+      --f-oro: #ffce00; --f-negro: #eeeae2; --f-rojo: #cc0000; --f-opacidad: 0.92; --f-raya-negro: #3a3a3a; --f-bandera-negro: #000000; --f-bandera-rojo: #dd0000;
     }
   }
   :root[data-fondo="bauhaus"][data-theme="dark"] {
@@ -84,7 +84,7 @@
     --mark: rgba(255, 206, 0, 0.13); --mark-edge: #ffce00;
     --turno: #ff6b5e; --turno-soft: rgba(255, 107, 94, 0.16);
     /* el negro no se ve sobre negro: en oscuro esa pieza va en tinta clara */
-    --f-oro: #ffce00; --f-negro: #eeeae2; --f-rojo: #cc0000; --f-opacidad: 0.16; --f-raya-negro: #3a3a3a;
+    --f-oro: #ffce00; --f-negro: #eeeae2; --f-rojo: #cc0000; --f-opacidad: 0.92; --f-raya-negro: #3a3a3a; --f-bandera-negro: #000000; --f-bandera-rojo: #dd0000;
   }
 
   html, body { height: 100%; overflow: hidden; }
@@ -142,7 +142,14 @@
   .inicio-cab { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 6px 8px 6px 14px; }
   .inicio-tit { font-size: 15px; font-weight: 600; margin: 0; white-space: nowrap; }
   .inicio-resumen { flex: 1; min-width: 0; font-size: 13.5px; color: var(--ink-2);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* en el celular el resumen no entra al lado del título: va en su propia línea, completo */
+  @media (max-width: 560px) {
+    .inicio-cab { flex-wrap: wrap; row-gap: 2px; }
+    .inicio-tit { margin-right: auto; }
+    .inicio .conmut { margin-left: 4px; }
+    .inicio-resumen { order: 9; flex-basis: 100%; -webkit-line-clamp: 3; padding: 0 6px 6px 0; }
+  }
   .inicio-video { flex: none; font-size: 13.5px; font-weight: 600; color: var(--accent); white-space: nowrap; }
   .inicio .conmut { margin-left: auto; flex: none; }
   .inicio-cuerpo { counter-reset: sec; }
@@ -324,24 +331,34 @@
     overflow: hidden; opacity: var(--f-opacidad);
   }
   :root[data-fondo="bauhaus"] .app { position: relative; z-index: 1; }
-  .fondo i { position: absolute; display: block; }
-  .f-circulo {
-    --d: min(78vmin, 560px); width: var(--d); height: var(--d); border-radius: 50%;
-    background: var(--f-oro); top: calc(var(--d) * -0.34); right: calc(var(--d) * -0.30);
+  /* la bandera de Alemania de fondo: tres franjas a toda la pantalla, con pliegues de tela
+     suaves para que no sea un rectángulo plano; tenue, quieta y detrás de las tarjetas */
+  :root[data-fondo="bauhaus"] .fondo {
+    background: linear-gradient(180deg, var(--f-bandera-negro) 0 33.34%, var(--f-bandera-rojo) 0 66.67%, var(--f-oro) 0);
   }
-  .f-cuadro {
-    --d: min(44vmin, 320px); width: var(--d); height: var(--d);
-    background: var(--f-negro); left: calc(var(--d) * -0.28); bottom: calc(var(--d) * 0.12);
+  .f-tela {
+    position: absolute; inset: -10%;
+    background:
+      repeating-linear-gradient(100deg,
+        rgba(255, 255, 255, 0) 0, rgba(255, 255, 255, 0.22) max(9vmax, 90px),
+        rgba(0, 0, 0, 0.16) max(20vmax, 200px), rgba(255, 255, 255, 0) max(30vmax, 300px));
+    mix-blend-mode: soft-light;
   }
-  .f-aro {
-    --d: min(30vmin, 230px); width: var(--d); height: var(--d); border-radius: 50%;
-    border: max(2px, min(0.6vmin, 5px)) solid var(--f-rojo);
-    right: calc(var(--d) * 0.18); bottom: calc(var(--d) * 0.55);
-  }
-  .f-linea {
-    width: max(150vmax, 1200px); height: max(2px, min(0.35vmin, 3px)); background: var(--f-negro);
-    left: 50%; top: 58%; transform: translate(-50%, -50%) rotate(-32deg);
-  }
+  /* sobre la bandera a todo color, los títulos de grupo y la firma van en una pastilla
+     sólida, para que se lean igual sobre el negro, el rojo o el oro */
+  :root[data-fondo="bauhaus"] .grupo-tit { background: transparent !important; -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important; padding: 16px 0 8px; }
+  :root[data-fondo="bauhaus"] .grupo-tit > span, :root[data-fondo="bauhaus"] .grupo-tit:not(:has(span)) {
+    color: var(--ink-2); }
+  :root[data-fondo="bauhaus"] .grupo-tit { text-shadow: none; }
+  :root[data-fondo="bauhaus"] .grupo-tit::before { content: none; }
+  :root[data-fondo="bauhaus"] .grupo-tit { display: block; }
+  :root[data-fondo="bauhaus"] .grupo-tit { width: fit-content; background: var(--surface) !important;
+    border-radius: 999px; padding: 5px 12px; margin: 14px 0 8px; box-shadow: 0 1px 2px rgba(0,0,0,.18);
+    position: static; }
+  :root[data-fondo="bauhaus"] .firma { background: var(--surface); border-radius: 14px; padding: 14px 16px;
+    width: fit-content; margin-inline: auto; box-shadow: 0 1px 2px rgba(0,0,0,.18); color: var(--ink-2); }
+  :root[data-fondo="bauhaus"] .firma::before { display: none; }
   /* la firma de los colores: una raya finita arriba de todo, no una bandera */
   :root[data-fondo="bauhaus"] .app::before {
     content: ""; flex: none; height: 3px;
@@ -361,7 +378,7 @@
   }
 </style>
 
-<div class="fondo" aria-hidden="true"><i class="f-circulo"></i><i class="f-cuadro"></i><i class="f-aro"></i><i class="f-linea"></i></div>
+<div class="fondo" aria-hidden="true"><i class="f-tela"></i></div>
 <div class="app">
   <header class="top">
     <div class="top-in" id="cab-indice">
@@ -392,7 +409,7 @@
       <section class="inicio" id="inicio" aria-labelledby="inicio-tit">
         <div class="inicio-cab">
           <h2 class="inicio-tit" id="inicio-tit">Cómo funciona</h2>
-          <span class="inicio-resumen" id="inicio-resumen" hidden>El método, las tarjetas y el uso sin internet</span>
+          <span class="inicio-resumen" id="inicio-resumen" hidden>El método, las tarjetas y cómo usar esta aplicación sin internet (para no gastar datos móviles)</span>
           <a class="inicio-video" id="metodo-enlace-corto" target="_blank" rel="noopener" hidden>ver video</a>
           <button class="conmut" id="b-inicio" aria-expanded="true" aria-controls="inicio-cuerpo">Plegar</button>
         </div>
