@@ -1,7 +1,8 @@
 {
+ "id": "./",
  "name": "Inglés al oído",
  "short_name": "Inglés",
- "description": "Repaso hablado del banco de frases en inglés, con el texto sincronizado.",
+ "description": "Inglés al oído: repaso hablado del banco de frases, con el texto sincronizado.",
  "start_url": "./",
  "scope": "./",
  "display": "standalone",

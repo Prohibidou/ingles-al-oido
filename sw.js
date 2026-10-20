@@ -1,7 +1,9 @@
 /* Service worker: el armazón se guarda al instalar; los audios, cuando se piden.
-   Así la app abre sin datos y cada pista escuchada queda disponible offline. */
-const SHELL = "shell-v1";
-const AUDIO = "audio-83f75af19e";
+   Así la app abre sin datos y cada pista escuchada queda disponible offline.
+   Los nombres llevan el prefijo del idioma: dos apps en el mismo dominio no se pisan. */
+const SHELL = "ingles-shell-v1";
+const AUDIO = "ingles-audio-83f75af19e";
+const VIEJOS = /^(shell-v1|audio-[0-9a-f]{10})$/;
 const BASICOS = ["./", "index.html", "manifest.webmanifest", "icono-192.png", "icono-512.png"];
 
 self.addEventListener("install", (e) => {
@@ -11,7 +13,9 @@ self.addEventListener("install", (e) => {
 self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys()
-      .then((ks) => Promise.all(ks.filter((k) => k !== SHELL && k !== AUDIO).map((k) => caches.delete(k))))
+      .then((ks) => Promise.all(ks
+        .filter((k) => (k.startsWith("ingles-") || VIEJOS.test(k)) && k !== SHELL && k !== AUDIO)
+        .map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
