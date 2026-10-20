@@ -4,7 +4,8 @@
 const SHELL = "ingles-shell-v1";
 const AUDIO = "ingles-audio-83f75af19e";
 const VIEJOS = /^(shell-v1|audio-[0-9a-f]{10})$/;
-const BASICOS = ["./", "index.html", "manifest.webmanifest", "icono-192.png", "icono-512.png"];
+const BASICOS = ["./", "index.html", "manifest.webmanifest", "icono-192.png", "icono-512.png",
+                 "creador.html", "creador.jpg"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(SHELL).then((c) => c.addAll(BASICOS)).then(() => self.skipWaiting()));
