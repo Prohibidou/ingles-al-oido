@@ -2,7 +2,7 @@
    Así la app abre sin datos y cada pista escuchada queda disponible offline.
    Los nombres llevan el prefijo del idioma: dos apps en el mismo dominio no se pisan. */
 const SHELL = "ingles-shell-v1";
-const AUDIO = "ingles-audio-83f75af19e";
+const AUDIO = "ingles-audio-7a7c4d0f73";
 const VIEJOS = /^(shell-v1|audio-[0-9a-f]{10})$/;
 const BASICOS = ["./", "index.html", "manifest.webmanifest", "icono-192.png", "icono-512.png",
                  "creador.html", "creador.jpg"];
